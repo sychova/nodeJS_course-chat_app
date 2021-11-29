@@ -8,7 +8,7 @@ const room = document.querySelector('#room')
 
 const getRoomsList = async () => {
 	const response = await fetch('/rooms')
-	const rooms = await response.json()
+	const { rooms } = await response.json()
 	if (rooms.error) {
 		return document.querySelector('#roomsList').innerHTML = ''
 	}

@@ -25,7 +25,7 @@ app.use(express.static(publicDirPath))
 app.get('/rooms', async (req, res) => {
     try {
         const rooms = getRooms()
-        res.status(200).send(rooms)
+        res.send(rooms)
     } catch (error) {
         res.status(500).send(error)
     }

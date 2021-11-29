@@ -51,7 +51,7 @@ const getUsersInRoom = (room) => {
 
 const getRooms = () => {
     const justRooms = users.map((user) => user.room)
-    const uniqueRooms = justRooms.filter((room, index, arr) => arr.indexOf(room) === index)
+    const uniqueRooms = [... new Set(justRooms)]
     if (uniqueRooms.length === 0) {
         throw new Error ('No existing rooms')
     }

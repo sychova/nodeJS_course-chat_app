@@ -9,6 +9,9 @@ const room = document.querySelector('#room')
 const getRoomsList = async () => {
 	const response = await fetch('/rooms')
 	const rooms = await response.json()
+	if (rooms.error) {
+		return document.querySelector('#roomsList').innerHTML = ''
+	}
 	const html = Mustache.render(roomsTemplate.innerHTML, { rooms })
 	document.querySelector('#roomsList').innerHTML = html
 }

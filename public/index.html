@@ -17,12 +17,23 @@
             <form action='/chat.html'>
                 <label>Display name</label>
                 <input type='text' name='username' placeholder='Display name' required>
-                <label>Room</label>
-                <input type='text' name='room' placeholder='Room' required>
+                <label for="room">Choose a room:</label>
+                <input list="roomsList" name="room" id="room" placeholder='Room' required>
+                <datalist id='roomsList'>
+                    
+                </datalist>
+                
                 <button>Join</button>
             </form>
         </div>
     </div>
+    <script id='roomsTemplate' type='text/html'>
+            {{#room}}
+            <option value={{.}}>
+            {{/room}}
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mustache.js/3.0.1/mustache.min.js"></script>
+    <script src='/js/index.js'></script>
 </body>
 
 </html>

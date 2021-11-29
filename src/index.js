@@ -22,6 +22,15 @@ const publicDirPath = path.join(__dirname, '../public')
 
 app.use(express.static(publicDirPath))
 
+app.get('/rooms', async (req, res) => {
+    try {
+        const rooms = getRooms()
+        res.status(200).send(rooms)
+    } catch (error) {
+        res.status(500).send(error)
+    }
+})
+
 io.on('connection', (socket) => {
     console.log('New WebSocket connection.')
 

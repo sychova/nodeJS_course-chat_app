@@ -52,7 +52,7 @@ const getUsersInRoom = (room) => {
 const getRooms = () => {
     const justRooms = users.map((user) => user.room)
     const uniqueRooms = justRooms.filter((room, index, arr) => arr.indexOf(room) === index)
-    console.log(uniqueRooms)
+    return uniqueRooms
 }
 
 module.exports = {

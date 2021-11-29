@@ -27,7 +27,7 @@ app.get('/rooms', async (req, res) => {
         const rooms = getRooms()
         res.send(rooms)
     } catch (error) {
-        res.status(500).send(error)
+        res.status(500).send({ error: error.message })
     }
 })
 

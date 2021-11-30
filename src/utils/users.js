@@ -49,9 +49,19 @@ const getUsersInRoom = (room) => {
     return usersInRoom
 }
 
+const getRooms = () => {
+    const justRooms = users.map((user) => user.room)
+    const uniqueRooms = [... new Set(justRooms)]
+    if (uniqueRooms.length === 0) {
+        throw new Error ('No existing rooms')
+    }
+    return uniqueRooms
+}
+
 module.exports = {
     addUser,
     removeUser,
     getUser,
-    getUsersInRoom
+    getUsersInRoom,
+    getRooms
 }

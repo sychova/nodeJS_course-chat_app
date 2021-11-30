@@ -8,7 +8,8 @@ const {
     addUser,
     removeUser,
     getUser,
-    getUsersInRoom
+    getUsersInRoom,
+    getRooms
 } = require('./utils/users')
 
 const app = express()
@@ -20,6 +21,15 @@ const port = process.env.PORT
 const publicDirPath = path.join(__dirname, '../public')
 
 app.use(express.static(publicDirPath))
+
+app.get('/rooms', async (req, res) => {
+    try {
+        const rooms = getRooms()
+        res.send({ rooms })
+    } catch (error) {
+        res.status(500).send({ error: error.message })
+    }
+})
 
 io.on('connection', (socket) => {
     console.log('New WebSocket connection.')

@@ -1,7 +1,3 @@
-document.addEventListener("DOMContentLoaded", async() => {
-	await getRoomsList()
-});
-
 const roomsTemplate = document.querySelector('#roomsTemplate')
 const roomsList = document.querySelector('#roomsList')
 const room = document.querySelector('#room')
@@ -19,3 +15,5 @@ const getRoomsList = async () => {
 room.addEventListener('change', (event) => {
 	room.setAttribute('value', event.target.value)
 })
+
+document.addEventListener("DOMContentLoaded", getRoomsList);

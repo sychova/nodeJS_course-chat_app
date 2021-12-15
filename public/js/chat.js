@@ -13,7 +13,9 @@ const locationTemplate = document.querySelector('#locationTemplate').innerHTML
 const sidebarTemplate = document.querySelector('#sidebarTemplate').innerHTML
 
 // Options
-const { username, room } = Qs.parse(location.search, { ignoreQueryPrefix: true })
+const { username, room } = Qs.parse(location.search, {
+    ignoreQueryPrefix: true,
+})
 
 const autoscroll = () => {
     // New message
@@ -43,7 +45,7 @@ socket.on('message', (message) => {
     const html = Mustache.render(messageTemplate, {
         username: message.username,
         message: message.text,
-        createdAt: moment(message.createdAt).format('h:mm A')
+        createdAt: moment(message.createdAt).format('h:mm A'),
     })
     $messages.insertAdjacentHTML('beforeend', html)
     autoscroll()
@@ -54,7 +56,7 @@ socket.on('sendLocation', (message) => {
     const html = Mustache.render(locationTemplate, {
         username: message.username,
         url: message.url,
-        createdAt: moment(message.createdAt).format('h:mm A')
+        createdAt: moment(message.createdAt).format('h:mm A'),
     })
     $messages.insertAdjacentHTML('beforeend', html)
     autoscroll()
@@ -63,7 +65,7 @@ socket.on('sendLocation', (message) => {
 socket.on('roomData', ({ room, users }) => {
     const html = Mustache.render(sidebarTemplate, {
         room,
-        users
+        users,
     })
     document.querySelector('#sidebar').innerHTML = html
 })
@@ -94,13 +96,17 @@ $locationButton.addEventListener('click', () => {
     $locationButton.setAttribute('disabled', 'disabled')
 
     navigator.geolocation.getCurrentPosition((position) => {
-        socket.emit('getLocation', {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude
-        }, () => {
-            $locationButton.removeAttribute('disabled')
-            console.log('Location shared.')
-        })
+        socket.emit(
+            'getLocation',
+            {
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+            },
+            () => {
+                $locationButton.removeAttribute('disabled')
+                console.log('Location shared.')
+            }
+        )
     })
 })
 

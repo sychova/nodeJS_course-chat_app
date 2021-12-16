@@ -3,103 +3,105 @@ const http = require('http')
 const express = require('express')
 const socketio = require('socket.io')
 const Filter = require('bad-words')
-const { generateMessage, generateLocationMessage } = require('./utils/messages')
+
 const {
-    addUser,
-    removeUser,
-    getUser,
-    getUsersInRoom,
-    getRooms,
-} = require('./utils/users')
+    generateWelcome,
+    generateJoined,
+    generateLeft,
+    makeMessageGenerator,
+} = require('./utils/messages')
+
+const {
+    userToRoomJoiner,
+    roomDataFetcher,
+    userFromRoomDropper,
+} = require('./services')
+const { roomRepo } = require('./repos')
+const { Location } = require('./entities')
 
 const app = express()
 const server = http.createServer(app)
 const io = socketio(server)
 
-const port = process.env.PORT
-
 const publicDirPath = path.join(__dirname, '../public')
+const filter = new Filter()
 
 app.use(express.static(publicDirPath))
 
-app.get('/rooms', async (req, res) => {
+app.get('/rooms', (req, res) => {
     try {
-        const rooms = getRooms()
-        res.send({ rooms })
+        const rooms = roomRepo.all
+        res.send({ rooms: rooms.map((r) => r.title) })
     } catch (error) {
+        console.error(error)
         res.status(500).send({ error: error.message })
     }
 })
 
 io.on('connection', (socket) => {
     console.log('New WebSocket connection.')
+    let context = {
+        user: null,
+        room: null,
+    }
 
-    socket.on('join', ({ username, room }, callback) => {
-        const { error, user } = addUser({ id: socket.id, username, room })
+    let generateMessage
+    let generateLocationMessage
 
-        if (error) {
-            return callback(error)
-        }
-
-        socket.join(user.room)
-
-        socket.emit('message', generateMessage('Admin', 'Welcome!'))
-        socket.broadcast
-            .to(user.room)
-            .emit(
-                'message',
-                generateMessage('Admin', `${user.username} has joined!`)
-            )
-
-        io.to(user.room).emit('roomData', {
-            room: user.room,
-            users: getUsersInRoom(user.room),
+    socket.on('join', async ({ username, room: roomTitle }, callback) => {
+        const { error, user, room } = await userToRoomJoiner.call({
+            username,
+            roomTitle,
         })
+        if (error) return callback(error)
+
+        context = {
+            user,
+            room,
+        }
+        generateMessage = makeMessageGenerator(user)
+        generateLocationMessage = makeMessageGenerator(
+            user,
+            (location) => `${location}`,
+            'url'
+        )
+
+        socket.join(room)
+        socket.emit('message', generateWelcome())
+        socket.broadcast.to(room).emit('message', generateJoined(user))
+
+        const roomWithUsers = await roomDataFetcher.call(room)
+        io.to(room).emit('roomData', roomWithUsers)
 
         callback()
     })
 
     socket.on('sendMessage', (message, callback) => {
-        const user = getUser(socket.id)
-        const filter = new Filter()
         if (filter.isProfane(message)) {
             return callback('Profanity is not allowed.')
         }
 
-        io.to(user.room).emit(
-            'message',
-            generateMessage(user.username, message)
-        )
+        io.to(context.room).emit('message', generateMessage(message))
         callback()
     })
 
-    socket.on('getLocation', (location, callback) => {
-        const user = getUser(socket.id)
-        io.to(user.room).emit(
+    socket.on('getLocation', (coords, callback) => {
+        io.to(context.room).emit(
             'sendLocation',
-            generateLocationMessage(
-                user.username,
-                `https://google.com/maps?q=${location.latitude},${location.longitude}`
-            )
+            generateLocationMessage(new Location(coords))
         )
         callback()
     })
 
-    socket.on('disconnect', () => {
-        const user = removeUser(socket.id)
+    socket.on('disconnect', async () => {
+        userFromRoomDropper.call(context)
+        io.to(context.room).emit('message', generateLeft(context.user))
 
-        if (user) {
-            io.to(user.room).emit(
-                'message',
-                generateMessage('Admin', `${user.username} has left!`)
-            )
-            io.to(user.room).emit('roomData', {
-                room: user.room,
-                users: getUsersInRoom(user.room),
-            })
-        }
+        const roomWithUsers = await roomDataFetcher.call(context.room)
+        io.to(context.room).emit('roomData', roomWithUsers)
     })
 })
-server.listen(port, () => {
-    console.log(`Server is up on port ${port}`)
+
+server.listen(process.env.PORT, () => {
+    console.log(`Server is up on port ${process.env.PORT}`)
 })

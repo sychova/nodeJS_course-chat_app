@@ -1,6 +1,7 @@
 const BaseRepo = require('./baseRepo')
 const { Room } = require('../entities')
 const { NotFound } = require('./common')
+const knex = require('../utils/knex')
 
 let seq = 1
 
@@ -9,52 +10,50 @@ class RoomRepo extends BaseRepo {
         return Room
     }
 
-    create(room) {
-        const record = {
-            id: room.title,
-            title: room.title,
-            users: new Set(),
-        }
-        this.gateway.keys.add(record.title)
-        this.gateway.table.set(record.title, record)
+    static get table() {
+        return 'rooms'
+    }
+
+    async create(room) {
+        const [record] = await this.query
+            .insert({ title: room.title })
+            .returning('*')
         return this.map(record)
     }
 
-    tryFindByTitle(title) {
-        const record = this.gateway.table.get(title)
+    async tryFindByTitle(title) {
+        const [record] = await this.query.select('*').where({ title }).limit(1)
         return this.mapOrNull(record)
     }
 
-    addUserToRoom(room, user) {
-        const record = this.gateway.table.get(room.title)
+    async addUserToRoom(room, user) {
+        const record = await this.tryFindByTitle(room.title)
         if (!record) this.throwNotFound()
 
-        this.gateway.table.set(record.title, {
-            id: record.id,
-            title: record.title,
-            users: record.users.add(user.id),
+        await knex('rooms_users').insert({
+            room_id: record.attr.id,
+            user_id: user.id,
         })
     }
 
-    removeUserFromRoom(room, user) {
-        const record = this.gateway.table.get(room.title)
+    async removeUserFromRoom(room, user) {
+        const record = await this.tryFindByTitle(room.title)
         if (!record) this.throwNotFound()
 
-        record.users.delete(user.id)
-        this.gateway.table.set(room.title, record)
+        await knex('rooms_users').where('user_id', user.id).del()
     }
 
-    get all() {
-        const result = []
-
-        this.gateway.keys.forEach((key) =>
-            result.push(this.gateway.table.get(key))
-        )
-        return result.filter(Boolean)
+    async all() {
+        return await this.query.select()
     }
 
-    getUsersForRoom(room) {
-        return this.userRepo.getByIds([...room.users])
+    async getUsersForRoom(room) {
+        const record = await this.tryFindByTitle(room.title)
+        const usersInRoom = await knex('rooms_users')
+            .where({ room_id: record.attr.id })
+            .select('user_id')
+            .then((users) => users.map((r) => r.user_id))
+        return this.userRepo.getByIds([...usersInRoom])
     }
 
     get userRepo() {

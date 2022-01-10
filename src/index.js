@@ -28,9 +28,9 @@ const filter = new Filter()
 
 app.use(express.static(publicDirPath))
 
-app.get('/rooms', (req, res) => {
+app.get('/rooms', async (req, res) => {
     try {
-        const rooms = roomRepo.all
+        const rooms = await roomRepo.all()
         res.send({ rooms: rooms.map((r) => r.title) })
     } catch (error) {
         console.error(error)

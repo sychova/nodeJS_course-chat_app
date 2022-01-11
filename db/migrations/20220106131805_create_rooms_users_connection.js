@@ -11,6 +11,7 @@ exports.up = async (knex) => {
             .references('id')
             .inTable('users')
             .onDelete('CASCADE')
+        t.unique(['room_id', 'user_id'])
     })
 }
 

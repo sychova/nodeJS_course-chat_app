@@ -5,6 +5,6 @@ const UserFromRoomDropper = require('./userFromRoomDropper')
 
 module.exports = {
     userToRoomJoiner: new UserToRoomJoiner({ userRepo, roomRepo }),
-    roomDataFetcher: new RoomDataFetcher({ roomRepo }),
+    roomDataFetcher: new RoomDataFetcher({ userRepo }),
     userFromRoomDropper: new UserFromRoomDropper({ roomRepo }),
 }

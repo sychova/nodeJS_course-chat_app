@@ -11,7 +11,7 @@ class Room extends BaseEntity {
     }
 
     get id() {
-        return this.title
+        return this.attr.id
     }
 
     get users() {

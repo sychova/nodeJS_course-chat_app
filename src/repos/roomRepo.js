@@ -1,9 +1,6 @@
 const BaseRepo = require('./baseRepo')
 const { Room } = require('../entities')
 const { NotFound } = require('./common')
-const knex = require('../utils/knex')
-
-let seq = 1
 
 class RoomRepo extends BaseRepo {
     static get entity() {
@@ -26,38 +23,30 @@ class RoomRepo extends BaseRepo {
         return this.mapOrNull(record)
     }
 
+    async findById(id) {
+        const [record] = await this.query.select('*').where({ id }).limit(1)
+        return this.mapOrNotFound(record)
+    }
+
     async addUserToRoom(room, user) {
-        const record = await this.tryFindByTitle(room.title)
+        const record = await this.findById(room.id)
         if (!record) this.throwNotFound()
 
-        await knex('rooms_users').insert({
-            room_id: record.attr.id,
+        await this.gateway('rooms_users').insert({
+            room_id: record.id,
             user_id: user.id,
         })
     }
 
     async removeUserFromRoom(room, user) {
-        const record = await this.tryFindByTitle(room.title)
+        const record = await this.findById(room.id)
         if (!record) this.throwNotFound()
 
-        await knex('rooms_users').where('user_id', user.id).del()
+        await this.gateway('rooms_users').where('user_id', user.id).del()
     }
 
-    async all() {
-        return await this.query.select()
-    }
-
-    async getUsersForRoom(room) {
-        const record = await this.tryFindByTitle(room.title)
-        const usersInRoom = await knex('rooms_users')
-            .where({ room_id: record.attr.id })
-            .select('user_id')
-            .then((users) => users.map((r) => r.user_id))
-        return this.userRepo.getByIds([...usersInRoom])
-    }
-
-    get userRepo() {
-        return this.deps.userRepo
+    all() {
+        return this.query.select()
     }
 }
 

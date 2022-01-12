@@ -25,9 +25,11 @@ class UserRepo extends BaseRepo {
         return this.mapOrNull(record)
     }
 
-    async getByIds(ids) {
-        const records = await this.query.whereIn('id', ids)
-        return this.map(records)
+    async getUsersForRoom(room) {
+        const usersInRoom = await this.gateway('rooms_users')
+            .join('users', 'users.id', 'rooms_users.user_id')
+            .where({ room_id: room.id })
+        return this.map(usersInRoom)
     }
 }
 

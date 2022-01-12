@@ -3,10 +3,7 @@ const UserRepo = require('./userRepo')
 const RoomRepo = require('./roomRepo')
 
 const userRepo = new UserRepo(knex)
-const roomRepo = new RoomRepo(
-    { keys: new Set(), table: new Map() },
-    { userRepo }
-)
+const roomRepo = new RoomRepo(knex)
 
 module.exports = {
     roomRepo,

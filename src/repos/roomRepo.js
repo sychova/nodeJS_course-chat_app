@@ -2,63 +2,51 @@ const BaseRepo = require('./baseRepo')
 const { Room } = require('../entities')
 const { NotFound } = require('./common')
 
-let seq = 1
-
 class RoomRepo extends BaseRepo {
     static get entity() {
         return Room
     }
 
-    create(room) {
-        const record = {
-            id: room.title,
-            title: room.title,
-            users: new Set(),
-        }
-        this.gateway.keys.add(record.title)
-        this.gateway.table.set(record.title, record)
+    static get table() {
+        return 'rooms'
+    }
+
+    async create(room) {
+        const [record] = await this.query
+            .insert({ title: room.title })
+            .returning('*')
         return this.map(record)
     }
 
-    tryFindByTitle(title) {
-        const record = this.gateway.table.get(title)
+    async tryFindByTitle(title) {
+        const [record] = await this.query.select('*').where({ title }).limit(1)
         return this.mapOrNull(record)
     }
 
-    addUserToRoom(room, user) {
-        const record = this.gateway.table.get(room.title)
+    async findById(id) {
+        const [record] = await this.query.select('*').where({ id }).limit(1)
+        return this.mapOrNotFound(record)
+    }
+
+    async addUserToRoom(room, user) {
+        const record = await this.findById(room.id)
         if (!record) this.throwNotFound()
 
-        this.gateway.table.set(record.title, {
-            id: record.id,
-            title: record.title,
-            users: record.users.add(user.id),
+        await this.gateway('rooms_users').insert({
+            room_id: record.id,
+            user_id: user.id,
         })
     }
 
-    removeUserFromRoom(room, user) {
-        const record = this.gateway.table.get(room.title)
+    async removeUserFromRoom(room, user) {
+        const record = await this.findById(room.id)
         if (!record) this.throwNotFound()
 
-        record.users.delete(user.id)
-        this.gateway.table.set(room.title, record)
+        await this.gateway('rooms_users').where('user_id', user.id).del()
     }
 
-    get all() {
-        const result = []
-
-        this.gateway.keys.forEach((key) =>
-            result.push(this.gateway.table.get(key))
-        )
-        return result.filter(Boolean)
-    }
-
-    getUsersForRoom(room) {
-        return this.userRepo.getByIds([...room.users])
-    }
-
-    get userRepo() {
-        return this.deps.userRepo
+    all() {
+        return this.query.select()
     }
 }
 

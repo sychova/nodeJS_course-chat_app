@@ -1,10 +1,10 @@
 class RoomDataFetcher {
-    constructor({ roomRepo }) {
-        this.roomRepo = roomRepo
+    constructor({ userRepo }) {
+        this.userRepo = userRepo
     }
 
     async call(room) {
-        const users = await this.roomRepo.getUsersForRoom(room)
+        const users = await this.userRepo.getUsersForRoom(room)
         return {
             room: room.title,
             users: users,

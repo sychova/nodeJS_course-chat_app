@@ -40,22 +40,20 @@ const autoscroll = () => {
     }
 }
 
-socket.on('message', (message) => {
-    console.log(message)
+socket.on('message', ({ username, text, createdAt }) => {
     const html = Mustache.render(messageTemplate, {
-        username: message.username,
-        message: message.text,
-        createdAt: moment(message.createdAt).format('h:mm A'),
+        username: username,
+        message: text,
+        createdAt: moment(createdAt).format('h:mm A'),
     })
     $messages.insertAdjacentHTML('beforeend', html)
     autoscroll()
 })
 
 socket.on('sendLocation', (message) => {
-    console.log(message)
     const html = Mustache.render(locationTemplate, {
         username: message.username,
-        url: message.url,
+        url: message.text,
         createdAt: moment(message.createdAt).format('h:mm A'),
     })
     $messages.insertAdjacentHTML('beforeend', html)

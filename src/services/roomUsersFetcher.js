@@ -1,4 +1,4 @@
-class RoomDataFetcher {
+class RoomUsersFetcher {
     constructor({ userRepo }) {
         this.userRepo = userRepo
     }
@@ -12,4 +12,4 @@ class RoomDataFetcher {
     }
 }
 
-module.exports = RoomDataFetcher
+module.exports = RoomUsersFetcher

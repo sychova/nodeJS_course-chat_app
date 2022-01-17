@@ -3,9 +3,9 @@ const User = require('../entities/user')
 const admin = new User({ username: 'admin' })
 
 const makeMessageGenerator =
-    (author, process = (p) => p, payloadKey = 'text') =>
+    (sender, process = (p) => p, payloadKey = 'text') =>
     (payload) => ({
-        username: author.username,
+        username: sender.username,
         [payloadKey]: process(payload),
         createdAt: Date.now(),
     })

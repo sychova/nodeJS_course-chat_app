@@ -13,8 +13,11 @@ const {
 
 const {
     userToRoomJoiner,
-    roomDataFetcher,
+    roomUsersFetcher,
     userFromRoomDropper,
+    messageToRoomSender,
+    locationToRoomSender,
+    roomMessagesFetcher,
 } = require('./services')
 const { roomRepo } = require('./repos')
 const { Location } = require('./entities')
@@ -45,9 +48,6 @@ io.on('connection', (socket) => {
         room: null,
     }
 
-    let generateMessage
-    let generateLocationMessage
-
     socket.on('join', async ({ username, room: roomTitle }, callback) => {
         const { error, user, room } = await userToRoomJoiner.call({
             username,
@@ -59,37 +59,47 @@ io.on('connection', (socket) => {
             user,
             room,
         }
-        generateMessage = makeMessageGenerator(user)
-        generateLocationMessage = makeMessageGenerator(
-            user,
-            (location) => `${location}`,
-            'url'
-        )
 
         socket.join(room)
+        const roomMessages = await roomMessagesFetcher.call(context.room.id)
+        roomMessages.forEach((message) => {
+            if (message.attr.type_id == 1) {
+                io.to(context.room).emit('message', message.attr)
+            } else {
+                io.to(context.room).emit('sendLocation', message.attr)
+            }
+        })
         socket.emit('message', generateWelcome())
         socket.broadcast.to(room).emit('message', generateJoined(user))
 
-        const roomWithUsers = await roomDataFetcher.call(room)
+        const roomWithUsers = await roomUsersFetcher.call(room)
         io.to(room).emit('roomData', roomWithUsers)
 
         callback()
     })
 
-    socket.on('sendMessage', (message, callback) => {
+    socket.on('sendMessage', async (message, callback) => {
         if (filter.isProfane(message)) {
             return callback('Profanity is not allowed.')
         }
-
-        io.to(context.room).emit('message', generateMessage(message))
+        const newMessage = await messageToRoomSender.call({
+            user: context.user,
+            room: context.room,
+            message,
+            type: 1,
+        })
+        io.to(context.room).emit('message', newMessage)
         callback()
     })
 
-    socket.on('getLocation', (coords, callback) => {
-        io.to(context.room).emit(
-            'sendLocation',
-            generateLocationMessage(new Location(coords))
-        )
+    socket.on('getLocation', async (coords, callback) => {
+        const newLocation = await locationToRoomSender.call({
+            user: context.user,
+            room: context.room,
+            coords,
+            type: 2,
+        })
+        io.to(context.room).emit('sendLocation', newLocation)
         callback()
     })
 
@@ -97,7 +107,7 @@ io.on('connection', (socket) => {
         userFromRoomDropper.call(context)
         io.to(context.room).emit('message', generateLeft(context.user))
 
-        const roomWithUsers = await roomDataFetcher.call(context.room)
+        const roomWithUsers = await roomUsersFetcher.call(context.room)
         io.to(context.room).emit('roomData', roomWithUsers)
     })
 })

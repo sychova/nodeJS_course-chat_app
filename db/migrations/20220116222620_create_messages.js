@@ -11,13 +11,9 @@ exports.up = async (knex) => {
             .references('id')
             .inTable('users')
             .onDelete('CASCADE')
-        t.integer('type_id')
-            .notNullable()
-            .references('id')
-            .inTable('message_types')
-            .onDelete('CASCADE')
-        t.timestamp('created_at').notNullable()
-        t.string('text')
+        t.enu('type', ['text', 'location']).notNullable()
+        t.timestamp('created_at').notNullable().defaultTo(knex.fn.now())
+        t.text('content')
     })
 }
 

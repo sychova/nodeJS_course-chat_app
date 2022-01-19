@@ -3,9 +3,8 @@ class RoomMessagesFetcher {
         this.messageRepo = messageRepo
     }
 
-    async call(room) {
-        const messages = await this.messageRepo.getMessagesForRoom(room)
-        return messages
+    call(roomId) {
+        return this.messageRepo.getMessagesForRoom(roomId)
     }
 }
 

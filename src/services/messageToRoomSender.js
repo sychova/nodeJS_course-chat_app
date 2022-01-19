@@ -1,6 +1,9 @@
 const { type } = require('express/lib/response')
 const { Message } = require('../entities')
 const { makeMessageGenerator } = require('../utils/messages')
+const Filter = require('bad-words')
+
+const filter = new Filter()
 
 class MessageToRoomSender {
     constructor({ messageRepo }) {
@@ -16,16 +19,17 @@ class MessageToRoomSender {
     }
 
     async send({ user, room, message, type }) {
+        if (filter.isProfane(message)) {
+            return { error: 'Profanity is not allowed.' }
+        }
         const generatedMessage = makeMessageGenerator(user)(message)
         const newMessage = new Message({
             roomId: room.id,
             senderId: user.id,
             type: type,
-            createdAt: generatedMessage.createdAt,
-            text: generatedMessage.text,
+            content: generatedMessage.content,
         })
-        this.createMessage(newMessage)
-        return generatedMessage
+        return await this.createMessage(newMessage)
     }
 
     createMessage(message) {

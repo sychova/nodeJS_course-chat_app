@@ -13,9 +13,49 @@ const locationTemplate = document.querySelector('#locationTemplate').innerHTML
 const sidebarTemplate = document.querySelector('#sidebarTemplate').innerHTML
 
 // Options
-const { username, room } = Qs.parse(location.search, {
+const { username, room, roomId } = Qs.parse(location.search, {
     ignoreQueryPrefix: true,
 })
+
+const roomMessagesRender = async (roomId) => {
+    const response = await fetch(`/room/${roomId}/messages`)
+    const messages = await response.json()
+    messages.forEach((message) => {
+        if (message.type == 'text') {
+            messageRender(message)
+        } else {
+            locationRender(message)
+        }
+    })
+}
+
+const messageRender = ({ username, content, created_at, error }) => {
+    if (error) {
+        return alert(error)
+    }
+
+    const html = Mustache.render(messageTemplate, {
+        username,
+        message: content,
+        createdAt: formatMessageCreatedAt(created_at),
+    })
+    $messages.insertAdjacentHTML('beforeend', html)
+    autoscroll()
+}
+
+const locationRender = (message) => {
+    const html = Mustache.render(locationTemplate, {
+        username: message.username,
+        url: message.content,
+        createdAt: formatMessageCreatedAt(message.createdAt),
+    })
+    $messages.insertAdjacentHTML('beforeend', html)
+    autoscroll()
+}
+
+const formatMessageCreatedAt = (time) => {
+    return moment(time).format('h:mm A')
+}
 
 const autoscroll = () => {
     // New message
@@ -40,33 +80,17 @@ const autoscroll = () => {
     }
 }
 
-socket.on('message', ({ username, text, createdAt }) => {
-    const html = Mustache.render(messageTemplate, {
-        username: username,
-        message: text,
-        createdAt: moment(createdAt).format('h:mm A'),
-    })
-    $messages.insertAdjacentHTML('beforeend', html)
-    autoscroll()
-})
-
-socket.on('sendLocation', (message) => {
-    const html = Mustache.render(locationTemplate, {
-        username: message.username,
-        url: message.text,
-        createdAt: moment(message.createdAt).format('h:mm A'),
-    })
-    $messages.insertAdjacentHTML('beforeend', html)
-    autoscroll()
-})
-
-socket.on('roomData', ({ room, users }) => {
+socket.on('roomData', ({ roomTitle, users }) => {
     const html = Mustache.render(sidebarTemplate, {
-        room,
+        roomTitle,
         users,
     })
     document.querySelector('#sidebar').innerHTML = html
 })
+
+socket.on('message', messageRender)
+
+socket.on('sendLocation', locationRender)
 
 $messageForm.addEventListener('submit', (event) => {
     event.preventDefault()
@@ -74,14 +98,10 @@ $messageForm.addEventListener('submit', (event) => {
 
     const message = $messageFormInput.value
 
-    socket.emit('sendMessage', message, (error) => {
+    socket.emit('sendMessage', message, () => {
         $messageFormButton.removeAttribute('disabled')
         $messageFormInput.value = ''
         $messageFormInput.focus()
-
-        if (error) {
-            return console.log(error)
-        }
         console.log('Message delivered')
     })
 })
@@ -114,3 +134,7 @@ socket.emit('join', { username, room }, (error) => {
         location.href = '/'
     }
 })
+
+if (roomId) {
+    document.addEventListener('DOMContentLoaded', roomMessagesRender(roomId))
+}

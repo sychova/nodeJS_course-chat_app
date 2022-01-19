@@ -3,11 +3,10 @@ const User = require('../entities/user')
 const admin = new User({ username: 'admin' })
 
 const makeMessageGenerator =
-    (sender, process = (p) => p, payloadKey = 'text') =>
+    (sender, process = (p) => p, payloadKey = 'content') =>
     (payload) => ({
         username: sender.username,
         [payloadKey]: process(payload),
-        createdAt: Date.now(),
     })
 
 const generateWelcome = makeMessageGenerator(admin, () => 'Welcome!')

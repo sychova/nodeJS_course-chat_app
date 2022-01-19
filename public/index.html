@@ -24,12 +24,13 @@
                     <label for="room">Choose a room:</label>
                     <input
                         list="roomsList"
-                        name="room"
                         id="room"
+                        name="room"
                         placeholder="Room"
                         required
                     />
                     <datalist id="roomsList"> </datalist>
+                    <input type="hidden" name="roomId" id="room-hidden">
 
                     <button>Join</button>
                 </form>
@@ -37,7 +38,8 @@
         </div>
         <script id="roomsTemplate" type="text/html">
             {{#rooms}}
-            <option value="{{.}}">{{/rooms}}</option>
+            <option data-value="{{id}}">{{title}}</option>
+            {{/rooms}}
         </script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/mustache.js/3.0.1/mustache.min.js"></script>
         <script src="/js/index.js"></script>

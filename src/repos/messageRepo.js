@@ -13,21 +13,20 @@ class MessageRepo extends BaseRepo {
     async create(message) {
         const [record] = await this.query
             .insert({
-                room_id: message.attr.roomId,
-                sender_id: message.attr.senderId,
-                type_id: message.attr.type,
-                created_at: new Date(message.attr.createdAt).toISOString(),
-                text: message.attr.text,
+                room_id: message.roomId,
+                sender_id: message.senderId,
+                type: message.type,
+                content: message.content,
             })
             .returning('*')
         return this.map(record)
     }
 
-    async getMessagesForRoom(room) {
+    async getMessagesForRoom(roomId) {
         const messagesInRoom = await this.gateway('messages')
             .join('users', 'users.id', 'messages.sender_id')
-            .where({ room_id: room })
-            .orderBy('messages.id')
+            .where({ room_id: roomId })
+            .orderBy('messages.created_at')
         return this.map(messagesInRoom)
     }
 }

@@ -1,32 +1,29 @@
 const BaseEntity = require('./base')
 
 class Message extends BaseEntity {
-    set text(text) {
-        if (!text) throw new Error('Message is required!')
-        this.attr.text = text.trim()
+    set content(content) {
+        if (!content) throw new Error('Message is required!')
+        this.attr.content = content.trim()
     }
 
-    get text() {
-        return this.attr.text
+    get content() {
+        return this.attr.content
     }
 
-    get messageRoom() {
+    get roomId() {
         return this.attr.roomId
     }
 
-    get messageCreatedDate() {
-        return this.attr.createdAt
+    get senderId() {
+        return this.attr.senderId
     }
 
-    toJSON() {
-        return {
-            id: this.id,
-            roomId: this.roomId,
-            senderId: this.senderId,
-            type: this.type,
-            createdAt: this.createdAt,
-            text: this.text,
-        }
+    get type() {
+        return this.attr.type
+    }
+
+    get createdAt() {
+        return this.attr.created_at
     }
 }
 

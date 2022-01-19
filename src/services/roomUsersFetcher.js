@@ -6,7 +6,8 @@ class RoomUsersFetcher {
     async call(room) {
         const users = await this.userRepo.getUsersForRoom(room)
         return {
-            room: room.title,
+            roomId: room.id,
+            roomTitle: room.title,
             users: users,
         }
     }

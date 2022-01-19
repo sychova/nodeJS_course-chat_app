@@ -25,7 +25,7 @@ class LocationToRoomSender {
             senderId: user.id,
             type: type,
             createdAt: generatedMessage.createdAt,
-            text: generatedMessage.url,
+            content: generatedMessage.url,
         })
         this.createMessage(newMessage)
         return generatedMessage
@@ -37,10 +37,3 @@ class LocationToRoomSender {
 }
 
 module.exports = LocationToRoomSender
-
-// generateLocationMessage = makeMessageGenerator(
-//     user,
-//     (location) => `${location}`,
-//     'url'
-// )
-// generateLocationMessage(new Location(coords))

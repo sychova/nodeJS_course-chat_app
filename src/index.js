@@ -2,13 +2,11 @@ const path = require('path')
 const http = require('http')
 const express = require('express')
 const socketio = require('socket.io')
-const Filter = require('bad-words')
 
 const {
     generateWelcome,
     generateJoined,
     generateLeft,
-    makeMessageGenerator,
 } = require('./utils/messages')
 
 const {
@@ -27,17 +25,27 @@ const server = http.createServer(app)
 const io = socketio(server)
 
 const publicDirPath = path.join(__dirname, '../public')
-const filter = new Filter()
 
 app.use(express.static(publicDirPath))
 
 app.get('/rooms', async (req, res) => {
     try {
         const rooms = await roomRepo.all()
-        res.send({ rooms: rooms.map((r) => r.title) })
+        res.json({ rooms: rooms.map((r) => r) })
     } catch (error) {
         console.error(error)
-        res.status(500).send({ error: error.message })
+        res.status(500).json({ error: error.message })
+    }
+})
+
+app.get('/room/:roomId/messages', async (req, res) => {
+    try {
+        const roomId = req.params.roomId
+        const roomMessages = await roomMessagesFetcher.call(roomId)
+        res.json(roomMessages)
+    } catch (error) {
+        console.error(error)
+        res.status(500).json({ error: error.message })
     }
 })
 
@@ -61,14 +69,6 @@ io.on('connection', (socket) => {
         }
 
         socket.join(room)
-        const roomMessages = await roomMessagesFetcher.call(context.room.id)
-        roomMessages.forEach((message) => {
-            if (message.attr.type_id == 1) {
-                io.to(context.room).emit('message', message.attr)
-            } else {
-                io.to(context.room).emit('sendLocation', message.attr)
-            }
-        })
         socket.emit('message', generateWelcome())
         socket.broadcast.to(room).emit('message', generateJoined(user))
 
@@ -79,16 +79,17 @@ io.on('connection', (socket) => {
     })
 
     socket.on('sendMessage', async (message, callback) => {
-        if (filter.isProfane(message)) {
-            return callback('Profanity is not allowed.')
-        }
         const newMessage = await messageToRoomSender.call({
             user: context.user,
             room: context.room,
             message,
-            type: 1,
+            type: 'text',
         })
-        io.to(context.room).emit('message', newMessage)
+        io.to(context.room).emit('message', {
+            content: newMessage.content,
+            createdAt: newMessage.createdAt,
+            username: context.user.username,
+        })
         callback()
     })
 
@@ -97,7 +98,7 @@ io.on('connection', (socket) => {
             user: context.user,
             room: context.room,
             coords,
-            type: 2,
+            type: 'location',
         })
         io.to(context.room).emit('sendLocation', newLocation)
         callback()
@@ -106,7 +107,6 @@ io.on('connection', (socket) => {
     socket.on('disconnect', async () => {
         userFromRoomDropper.call(context)
         io.to(context.room).emit('message', generateLeft(context.user))
-
         const roomWithUsers = await roomUsersFetcher.call(context.room)
         io.to(context.room).emit('roomData', roomWithUsers)
     })

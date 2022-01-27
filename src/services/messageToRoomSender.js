@@ -18,7 +18,7 @@ class MessageToRoomSender {
         }
     }
 
-    async send({ user, room, message, type }) {
+    send({ user, room, message, type }) {
         if (filter.isProfane(message)) {
             return { error: 'Profanity is not allowed.' }
         }
@@ -29,7 +29,7 @@ class MessageToRoomSender {
             type: type,
             content: generatedMessage.content,
         })
-        return await this.createMessage(newMessage)
+        return this.createMessage(newMessage)
     }
 
     createMessage(message) {

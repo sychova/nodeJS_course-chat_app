@@ -12,8 +12,25 @@ const getRoomsList = async () => {
     document.querySelector('#roomsList').innerHTML = html
 }
 
-room.addEventListener('change', (event) => {
-    room.setAttribute('value', event.target.value)
+room.addEventListener('input', (event) => {
+    const input = event.target
+    const list = input.getAttribute('list')
+    const options = document.querySelectorAll('#' + list + ' option')
+    const hiddenInput = document.getElementById(
+        input.getAttribute('id') + '-hidden'
+    )
+    const inputValue = input.value
+
+    hiddenInput.value = inputValue
+
+    for (var i = 0; i < options.length; i++) {
+        if (options[i].innerText === inputValue) {
+            hiddenInput.value = options[i].getAttribute('data-value')
+            break
+        }
+
+        hiddenInput.value = null
+    }
 })
 
 document.addEventListener('DOMContentLoaded', getRoomsList)

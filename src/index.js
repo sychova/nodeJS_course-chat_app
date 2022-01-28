@@ -1,4 +1,3 @@
-const path = require('path')
 const http = require('http')
 const express = require('express')
 const socketio = require('socket.io')
@@ -15,70 +14,44 @@ const {
     userFromRoomDropper,
     messageToRoomSender,
     locationToRoomSender,
-    roomMessagesFetcher,
 } = require('./services')
-const { roomRepo } = require('./repos')
-const { Location } = require('./entities')
+const actions = require('./actions')
+const middlewares = require('./middlewares')
 
 const app = express()
 const server = http.createServer(app)
 const io = socketio(server)
 
-const publicDirPath = path.join(__dirname, '../public')
+app.use(middlewares)
 
-app.use(express.static(publicDirPath))
+app.get('/rooms', actions.getRooms)
+app.get('/room/:roomId/messages', actions.getRoomMessages)
 
-app.get('/rooms', async (req, res) => {
-    try {
-        const rooms = await roomRepo.all()
-        res.json({ rooms: rooms.map((r) => r) })
-    } catch (error) {
-        console.error(error)
-        res.status(500).json({ error: error.message })
-    }
-})
+io.on('connection', async (socket) => {
+    const { username, roomTitle } = socket.handshake.query
+    console.log(`User ${username} has been connected`)
 
-app.get('/room/:roomId/messages', async (req, res) => {
-    try {
-        const roomId = req.params.roomId
-        const roomMessages = await roomMessagesFetcher.call(roomId)
-        res.json(roomMessages)
-    } catch (error) {
-        console.error(error)
-        res.status(500).json({ error: error.message })
-    }
-})
-
-io.on('connection', (socket) => {
-    console.log('New WebSocket connection.')
-    let context = {
-        user: null,
-        room: null,
-    }
-
-    socket.on('join', async ({ username, room: roomTitle }, callback) => {
-        const { error, user, room } = await userToRoomJoiner.call({
-            username,
-            roomTitle,
-        })
-        if (error) return callback(error)
-
-        context = {
-            user,
-            room,
-        }
-
-        socket.join(room)
-        socket.emit('message', generateWelcome())
-        socket.broadcast.to(room).emit('message', generateJoined(user))
-
-        const roomWithUsers = await roomUsersFetcher.call(room)
-        io.to(room).emit('roomData', roomWithUsers)
-
-        callback()
+    const { error, user, room } = await userToRoomJoiner.call({
+        username,
+        roomTitle,
     })
+    if (error) throw error
 
-    socket.on('sendMessage', async (message, callback) => {
+    const context = {
+        user,
+        room,
+    }
+
+    socket.join(context.room)
+    socket.emit('message', generateWelcome())
+    socket.to(context.room).emit('message', generateJoined(user))
+
+    const roomWithUsers = await roomUsersFetcher.call(room)
+    io.to(room).emit('roomData', roomWithUsers)
+
+    console.log(`User ${username} has been joined to ${roomTitle}`)
+
+    socket.on('message', async (message, callback) => {
         const newMessage = await messageToRoomSender.call({
             user: context.user,
             room: context.room,
@@ -93,14 +66,14 @@ io.on('connection', (socket) => {
         callback()
     })
 
-    socket.on('getLocation', async (coords, callback) => {
+    socket.on('location', async (coords, callback) => {
         const newLocation = await locationToRoomSender.call({
             user: context.user,
             room: context.room,
             coords,
             type: 'location',
         })
-        io.to(context.room).emit('sendLocation', newLocation)
+        io.to(context.room).emit('location', newLocation)
         callback()
     })
 

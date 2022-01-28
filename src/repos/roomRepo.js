@@ -28,6 +28,17 @@ class RoomRepo extends BaseRepo {
         return this.mapOrNotFound(record)
     }
 
+    async isUserInRoom({ user, room }) {
+        const {
+            rows: [{ exists }],
+        } = await this.gateway.raw(
+            `SELECT EXISTS(select from rooms_users where room_id = ? AND user_id = ?)`,
+            [room.id, user.id]
+        )
+
+        return exists
+    }
+
     async addUserToRoom(room, user) {
         const record = await this.findById(room.id)
         if (!record) this.throwNotFound()

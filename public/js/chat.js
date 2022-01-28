@@ -1,5 +1,3 @@
-const socket = io()
-
 // Elements
 const $messageForm = document.querySelector('#messageForm')
 const $messageFormInput = $messageForm.querySelector('input')
@@ -11,11 +9,6 @@ const $messages = document.querySelector('#messages')
 const messageTemplate = document.querySelector('#messageTemplate').innerHTML
 const locationTemplate = document.querySelector('#locationTemplate').innerHTML
 const sidebarTemplate = document.querySelector('#sidebarTemplate').innerHTML
-
-// Options
-const { username, room, roomId } = Qs.parse(location.search, {
-    ignoreQueryPrefix: true,
-})
 
 const roomMessagesRender = async (roomId) => {
     const response = await fetch(`/room/${roomId}/messages`)
@@ -80,6 +73,17 @@ const autoscroll = () => {
     }
 }
 
+const { username, room, roomId } = Qs.parse(location.search, {
+    ignoreQueryPrefix: true,
+})
+
+const socket = io({
+    query: {
+        username,
+        roomTitle: room,
+    },
+})
+
 socket.on('roomData', ({ roomTitle, users }) => {
     const html = Mustache.render(sidebarTemplate, {
         roomTitle,
@@ -90,7 +94,7 @@ socket.on('roomData', ({ roomTitle, users }) => {
 
 socket.on('message', messageRender)
 
-socket.on('sendLocation', locationRender)
+socket.on('location', locationRender)
 
 $messageForm.addEventListener('submit', (event) => {
     event.preventDefault()
@@ -98,7 +102,7 @@ $messageForm.addEventListener('submit', (event) => {
 
     const message = $messageFormInput.value
 
-    socket.emit('sendMessage', message, () => {
+    socket.emit('message', message, () => {
         $messageFormButton.removeAttribute('disabled')
         $messageFormInput.value = ''
         $messageFormInput.focus()
@@ -115,7 +119,7 @@ $locationButton.addEventListener('click', () => {
 
     navigator.geolocation.getCurrentPosition((position) => {
         socket.emit(
-            'getLocation',
+            'location',
             {
                 latitude: position.coords.latitude,
                 longitude: position.coords.longitude,
@@ -128,11 +132,9 @@ $locationButton.addEventListener('click', () => {
     })
 })
 
-socket.emit('join', { username, room }, (error) => {
-    if (error) {
-        alert(error)
-        location.href = '/'
-    }
+socket.on('connect_error', (error) => {
+    alert(error)
+    location.href = '/'
 })
 
 if (roomId) {

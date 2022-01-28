@@ -3,9 +3,9 @@ class UserFromRoomDropper {
         this.roomRepo = roomRepo
     }
 
-    call({ user, room }) {
+    async call({ user, room }) {
         try {
-            return this.drop({ user, room })
+            await this.drop({ user, room })
         } catch (error) {
             return { error: error.message || error }
         }

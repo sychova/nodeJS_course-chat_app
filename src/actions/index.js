@@ -1,10 +1,9 @@
 const { wrapAction } = require('./base')
 
-const { roomMessagesFetcher } = require('../services')
-const { roomRepo } = require('../repos')
+const { roomMessagesFetcher, roomsFetcher } = require('../services')
 
 const getRooms = wrapAction(async () => {
-    const rooms = await roomRepo.all()
+    const rooms = await roomsFetcher.call()
     return { rooms: rooms.map((r) => r) }
 })
 

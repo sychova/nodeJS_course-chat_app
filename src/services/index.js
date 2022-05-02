@@ -5,6 +5,7 @@ const UserFromRoomDropper = require('./userFromRoomDropper')
 const MessageToRoomSender = require('./messageToRoomSender')
 const LocationToRoomSender = require('./locationToRoomSender')
 const RoomMessagesFetcher = require('./roomMessagesFetcher')
+const RoomsFetcher = require('./roomsFetcher')
 
 module.exports = {
     userToRoomJoiner: new UserToRoomJoiner({ userRepo, roomRepo }),
@@ -13,4 +14,5 @@ module.exports = {
     messageToRoomSender: new MessageToRoomSender({ messageRepo }),
     locationToRoomSender: new LocationToRoomSender({ messageRepo }),
     roomMessagesFetcher: new RoomMessagesFetcher({ messageRepo }),
+    roomsFetcher: new RoomsFetcher({ roomRepo }),
 }

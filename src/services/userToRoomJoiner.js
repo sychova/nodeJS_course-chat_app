@@ -17,7 +17,7 @@ class UserToRoomJoiner {
     async join({ username, roomTitle }) {
         const user = await this.getUser({ username })
         const room = await this.getRoom({ title: roomTitle })
-        await this.addUserToRoom(room, user)
+        await this.addUserToRoom({ room, user })
         return { user, room }
     }
 
@@ -53,8 +53,11 @@ class UserToRoomJoiner {
         return this.roomRepo.create(room)
     }
 
-    addUserToRoom(room, user) {
-        return this.roomRepo.addUserToRoom(room, user)
+    async addUserToRoom({ room, user }) {
+        const isUserInRoom = await this.roomRepo.isUserInRoom({ user, room })
+        if (isUserInRoom) return
+
+        await this.roomRepo.addUserToRoom(room, user)
     }
 }
 
